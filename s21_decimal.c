@@ -201,7 +201,7 @@ int s21_from_int_to_decimal(int src, s21_decimal *dst) {
     return error;
 }
 
-static void s21_down_row_10(s21_decimal *src) {
+static void s21_down_raw_10(s21_decimal *src) {
     unsigned long long rem = 0;
     for (int i = 2; i >= 0; --i) {
         unsigned long long cur = (rem << 32) | src->bits[i];
@@ -216,7 +216,7 @@ int s21_from_decimal_to_int(s21_decimal src, int *dst) {
         int scale = s21_get_scale(src);
 
         while (scale-- > 0) {
-            s21_div_by_10(&src);
+            s21_down_raw_10(&src);
         }
 
         if (src.bits[2] != 0 || src.bits[1] != 0 || src.bits[0] > (unsigned)INT_MAX) {
