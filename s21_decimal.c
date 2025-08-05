@@ -123,7 +123,7 @@ static int s21_add_mantiss(s21_decimal a, s21_decimal b, s21_decimal* result) {
         buffer = (unsigned long long)a.bits[i] + (unsigned long long)b.bits[i] + (buffer >> 32);
         result->bits[i] = (unsigned int)(buffer & 0xFFFFFFFF);
     }
-    return (buffer >> 32) ? 1 : 0;  // переполнение
+    return (buffer >> 32) ? 1 : 0;  
 }
 
 static void s21_sub_mantiss(s21_decimal maxd, s21_decimal mind, s21_decimal* result) {
