@@ -1,4 +1,5 @@
 #include "s21_decimal.h"
+
 #define S21_SIGN_MASK    0x80000000
 #define S21_SCALE_MASK   0x00FF0000
 
@@ -183,4 +184,68 @@ int s21_sub(s21_decimal a, s21_decimal b, s21_decimal *result) {
         error_code = s21_add(a, neg_b, result);
     }
     return error_code;
+}
+
+int s21_from_int_to_decimal(int src, s21_decimal *dst) {
+    int error = 1;
+    if (dst) {
+        memset(dst, 0, sizeof(s21_decimal));
+        if (src < 0) {
+            s21_set_sign(dst, 1);
+            src = -src;
+        }
+        dst->bits[0] = (unsigned int)src;
+        s21_set_scale(dst, 0);
+        error = 0;
+    }
+    return error;
+}
+
+static void s21_down_row_10(s21_decimal *src) {
+    unsigned long long rem = 0;
+    for (int i = 2; i >= 0; --i) {
+        unsigned long long cur = (rem << 32) | src->bits[i];
+        src->bits[i] = (unsigned int)(cur / 10ull);
+        rem = cur % 10ull;
+    }
+}
+
+int s21_from_decimal_to_int(s21_decimal src, int *dst) {
+    if (dst) {
+        int sign = s21_get_sign(src);
+        int scale = s21_get_scale(src);
+
+        while (scale-- > 0) {
+            s21_div_by_10(&src);
+        }
+
+        if (src.bits[2] != 0 || src.bits[1] != 0 || src.bits[0] > (unsigned)INT_MAX) {
+            *dst = 0;
+            return 1; 
+        }
+
+    *dst = sign ? -(int)src.bits[0] : (int)src.bits[0];
+    return 0;  // OK
+    }
+}
+
+int s21_from_decimal_to_float(s21_decimal src, float *dst) {
+    int error = 1;
+    if (dst) {
+        unsigned long long mant = 0;
+        mant |= (unsigned long long)src.bits[2] << 64; 
+        mant |= (unsigned long long)src.bits[1] << 32;
+        mant |= src.bits[0];
+        int scale = s21_get_scale(src);
+        double tmp = (double)mant;
+        for (int i = 0; i < scale; ++i) tmp /= 10.0;
+        if (s21_get_sign(src)) tmp = -tmp;
+        *dst = (float)tmp;
+        if (isfinite(*dst)) {
+            error = 0;
+        } else {
+            *dst = 0.0f;
+        }
+    }
+    return error;
 }
